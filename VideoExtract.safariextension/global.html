@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<title>VideoExtract</title>
+<script>
+
+var $log = function(msg) {
+  safari.application
+    .activeBrowserWindow
+    .activeTab.page
+    .dispatchMessage('log', msg);
+
+    // Using 'arguments' breaks the extension for some reason
+    // .dispatchMessage('log', arguments);
+};
+
+function handleCommand(event) {
+  switch (event.command) {
+    case 'run': {
+      $log('Extension button clicked!');
+
+      safari.application
+        .activeBrowserWindow
+        .activeTab.page
+        .dispatchMessage('find-videos');
+
+      break;
+    }
+  }
+}
+
+
+function validateCommand(event) {
+  if (event.command === 'run') {
+    // Disable the button if there is no URL loaded in the tab.
+    event.target.disabled = !event.target.browserWindow.activeTab.url;
+  }
+}
+
+
+function handleMessage(msg) {
+  switch (msg.name) {
+    case 'openVideoInNewTab': {
+      var newTab = safari.application.activeBrowserWindow.openTab();
+      newTab.url = safari.extension.baseURI + 'player.html';
+
+      // Give the tab enough time to register the message handler
+      setTimeout(function() {
+        newTab.page.dispatchMessage('play-video', msg.message);
+      }, 500);
+
+      break;
+    }
+
+    case 'openUrlInNewTab': {
+      safari.application.activeBrowserWindow.openTab().url = msg.message;
+
+      break;
+    }
+  }
+}
+
+
+safari.application.addEventListener('command', handleCommand, false);
+safari.application.addEventListener('validate', validateCommand, false);
+safari.application.addEventListener('message', handleMessage, false);
+
+</script>
+</html>
